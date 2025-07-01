@@ -12,8 +12,8 @@ from database_functions import (
     save_meals,
     save_feedback
 )
-SPOON_API_KEY = os.getenv('5d2697dc9a6740d2b7df055f6a39c54b')
-GOOGLE_API_KEY = os.getenv('AIzaSyAXSZZ3-F23AKUxtsKCRTO9eRL5h0RgJ64')
+SPOON_API_KEY = os.getenv('')
+GOOGLE_API_KEY = os.getenv('')
 
 DB_PATH = 'mealplanner.db'
 # Introduction, call apis
