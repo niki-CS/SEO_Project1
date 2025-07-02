@@ -1,11 +1,20 @@
 # Meal Prep Shopping List Automator (Google AI Studio version)
 # Prompts user for meal budget & dietary restrictions
+<<<<<<< HEAD
 # Uses Gemini API to generate 5 meal prep ideas
+=======
+# Uses Gemini API to generate 3 meal prep ideas
+>>>>>>> eb95097 (completed main parts, going to try and fix responses)
 # Saves to SQLite DB
 
 import os
 import sqlite3
 import google.generativeai as genai
+<<<<<<< HEAD
+=======
+import requests
+from typing import List
+>>>>>>> eb95097 (completed main parts, going to try and fix responses)
 from database_functions import (
     init_db,
     save_request,
@@ -14,16 +23,31 @@ from database_functions import (
 )
 
 # Your AI Studio API Key
+<<<<<<< HEAD
 GOOGLE_API_KEY =''
 
 if not GOOGLE_API_KEY:
     print("❌ ERROR: GOOGLE_API_KEY environment variable not set.")
     print("Please set it like this in your terminal:")
     print('  export GOOGLE_API_KEY="YOUR_KEY_HERE"')
+=======
+
+SPOON_API_KEY = os.getenv('SPOON_API_KEY')
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
+
+if not SPOON_API_KEY:
+    print("❌ ERROR: SPOON_API_KEY not set. Export your Spoonacular key first.")
+    exit(1)
+if not GOOGLE_API_KEY:
+    print("❌ ERROR: GOOGLE_API_KEY environment variable not set.")
+    print("Please set it like this in your terminal:")
+    print('export GOOGLE_API_KEY="YOUR_KEY_HERE"')
+>>>>>>> eb95097 (completed main parts, going to try and fix responses)
     exit(1)
 
 # Initialize Gemini
 genai.configure(api_key=GOOGLE_API_KEY)
+<<<<<<< HEAD
 model = genai.GenerativeModel("gemini-1.5-pro-latest")
 
 DB_PATH = 'mealplanner.db'
@@ -70,8 +94,127 @@ def call_genai_for_meals(budget, diets):
             meals.append(meal)
 
     return meals
+=======
+model = genai.GenerativeModel("gemini-2.5-pro")
+DB_PATH = 'mealplanner.db'
+
+def call_spoonacular(budget, diets):
+    # Fetch 3 recipes under budget matching diets from Spoonacular.
+    url = 'https://api.spoonacular.com/recipes/complexSearch'
+    params = {
+        'apiKey': SPOON_API_KEY,
+        'maxPrice': budget,
+        'number': 3,
+        'addRecipeInformation': True,
+        'diet': ','.join(diets) if diets else None,
+    }
+    resp = requests.get(url, params={k: v for k, v in params.items() if v is not None})
+    resp.raise_for_status()
+    return resp.json().get('results', [])
+
+def summarize_with_genai(text):
+    # Summarize recipe description with Gemini and Spoonacular.
+    if not text:
+        return ""
+    resp = model.generate_content(f"Summarize this recipe:\n\n{text}")
+    return resp.text.strip()
+    
+    response = model.generate_content(prompt)
+    text = response.text
+
+    # Parse: split on double newlines
+    meals = []
+    for block in text.strip().split("\n\n"):
+        lines = block.strip().split("\n")
+        meal = {"title": "", "price": 0.0, "diets": [], "summary": "", "source_url": ""}
+
+        for line in lines:
+            line = line.strip()
+            if line.lower().startswith("title:"):
+                meal["title"] = line.partition(":")[2].strip()
+            elif line.lower().startswith("estimated price"):
+                try:
+                    price_text = line.partition(":")[2].strip().replace("$", "")
+                    meal["price"] = float(price_text)
+                except ValueError:
+                    meal["price"] = 0.0
+            elif line.lower().startswith("diet tags"):
+                tags = line.partition(":")[2].strip()
+                meal["diets"] = [tag.strip() for tag in tags.split(",") if tag.strip()]
+            elif line.lower().startswith("source url"):
+                meal["source_url"] = line.partition(":")[2].strip()
+
+        if meal["title"]:
+            meals.append(meal)
+
+    return meals
+
+def display_meals(meals):
+    print("\n=== Meal Suggestions ===")
+    for i, m in enumerate(meals, 1):
+        print(f"[{i}] {m['title']} — ${m['price']:.2f}")
+        print(f"    Diets: {', '.join(m['diets']) or 'none'}")
+        print(f"    Summary: {m['summary']}\n")
+
+def generate_shopping_list_with_genai(recipes: List[dict]) -> str:
+    #ask gemini for recipe grocery list
+    titles = [r['title'] for r in recipes]
+    prompt = (
+        "Here are five recipes I plan to make:\n"
+        + "\n".join(f"- {t}" for t in titles)
+        + "\n\nPlease provide a combined shopping list of ingredients, "
+        "organized by category (produce, dairy, pantry, etc.). "
+    )
+    resp = model.generate_content(prompt)
+    return resp.text.strip()
+
+def main():
+    print("\n=== Welcome to the Meal Prep CLI (Powered by Gemini and Spoonacular) ===")
+
+    # 1. Init DB
+    conn = init_db(DB_PATH)
+
+    # 2. Get user budget
+    while True:
+        try:
+            budget = float(input("Enter your meal budget (e.g. 25.0): ").strip())
+            break
+        except ValueError:
+            print("Please enter a valid number.")
+    
+    # 3 Prompt for servings
+    while True:
+        try:
+            servings = int(input("How many people are you cooking for? ").strip())
+            if servings < 1:
+                raise ValueError
+            break
+        except ValueError:
+            print("Please enter a valid integer (at least 1).")
+
+    # 4. Get user dietary restrictions
+    diets_input = input("Enter any dietary restrictions separated by commas (press Enter if none): ").strip()
+    diets = [d.strip() for d in diets_input.split(",") if d.strip()]
+    
+    # 5. Save request
+    request_id = save_request(conn, budget, servings, diets)
+    print(f"Request #{request_id} saved with budget ${budget}, servings {servings}, diets {diets}.")
 
 
+    # 5. Fetch recipes using Spoonacular API
+    try:
+        raw = call_spoonacular(budget, diets)
+    except requests.HTTPError as e:
+        print(f"No meal ideas were generated. Please try with different parameters or try again later: {e}")
+        conn.close()
+        return
+>>>>>>> eb95097 (completed main parts, going to try and fix responses)
+
+    # 6. Show meals and prepare for DB insert
+    meals_to_save = []
+    print("\nHere are your meal suggestions:\n")
+
+<<<<<<< HEAD
 if __name__ == "__main__":
     print("\n=== Welcome to the Meal Prep CLI (Gemini) ===")
 
@@ -123,8 +266,27 @@ if __name__ == "__main__":
         print()
 
         meals_to_save.append(meal)
+=======
+    for item in raw:
+        base_price = item.get('pricePerServing', 0) / 100
+        total_price = base_price * servings
+        summary = summarize_with_genai(item.get('summary', ''))
+        
+        meals_to_save.append({
+            'title': item.get('title', 'Unknown'),
+            'price': item.get('pricePerServing', 0) / 100,
+            'diets': item.get('diets', []),
+            'summary': summary,
+            'source_url': item.get('sourceUrl', '#'),
+        })
+>>>>>>> eb95097 (completed main parts, going to try and fix responses)
 
+    if not meals_to_save:
+        print("No recipes found under that budget/diet combination.")
+        conn.close()
+        return
 
+<<<<<<< HEAD
 # 7. Save meals to DB
 save_meals(conn, request_id, meals_to_save)
 print("\nMeals saved to database.")
@@ -141,3 +303,31 @@ print("Thank you! Your feedback has been saved.")
 conn.close()
 print("\n=== Meal Plan Session Complete ===\n")
 ...
+=======
+    # 7. Show the meals and save them
+    display_meals(meals_to_save)
+    save_meals(conn, request_id, meals_to_save)
+
+    # optional: shopping list
+    want_list = input("\nWould you like a consolidated shopping list? (yes/no): ").strip().lower()
+    if want_list.startswith('y'):
+        print("\nGenerating shopping list…\n")
+        shopping_list = generate_shopping_list_with_genai(meals_to_save)
+        print(shopping_list)
+
+    # 8. Feedback
+    print("\n--- Feedback ---")
+    feedback = input("Are you satisfied with these meal suggestions? (yes/no): ").strip().lower()
+    satisfied = feedback in ["yes", "y"]
+    comments = input("Any comments? (optional): ").strip()
+    save_feedback(conn, request_id, satisfied, comments)
+    conn.close()
+
+    if satisfied:
+        print("\nGreat! Thanks for your feedback.")
+    else:
+        print("\nSorry to hear that. We'll improve next time.")
+
+if __name__ == '__main__':
+    main()
+>>>>>>> eb95097 (completed main parts, going to try and fix responses)
