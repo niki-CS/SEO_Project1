@@ -1,10 +1,6 @@
 import sqlite3
 from typing import List, Dict, Any
 
-<<<<<<< HEAD
-
-=======
->>>>>>> eb95097 (completed main parts, going to try and fix responses)
 def init_db(path: str) -> sqlite3.Connection:
     """Initialize the SQLite database and tables if they don't exist."""
     conn = sqlite3.connect(path)
@@ -13,10 +9,7 @@ def init_db(path: str) -> sqlite3.Connection:
         CREATE TABLE IF NOT EXISTS requests (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             budget REAL NOT NULL,
-<<<<<<< HEAD
-=======
             servings INTEGER NOT NULL,
->>>>>>> eb95097 (completed main parts, going to try and fix responses)
             diets TEXT
         )
     ''')
@@ -44,18 +37,6 @@ def init_db(path: str) -> sqlite3.Connection:
     conn.commit()
     return conn
 
-<<<<<<< HEAD
-
-def save_request(
-    conn: sqlite3.Connection, budget: float, diets: List[str]
-) -> int:
-    """Save a meal-plan request and return its ID."""
-    diets_str = ','.join(diets)
-    cur = conn.cursor()
-    cur.execute(
-        'INSERT INTO requests (budget, diets) VALUES (?, ?)',
-        (budget, diets_str)
-=======
 def save_request(
     conn: sqlite3.Connection, budget: float, servings: int, diets: List[str]
 ) -> int:
@@ -65,15 +46,10 @@ def save_request(
     cur.execute(
         'INSERT INTO requests (budget, servings, diets) VALUES (?, ?, ?)',
         (budget, servings, diets_str)
->>>>>>> eb95097 (completed main parts, going to try and fix responses)
     )
     conn.commit()
     return cur.lastrowid
 
-<<<<<<< HEAD
-
-=======
->>>>>>> eb95097 (completed main parts, going to try and fix responses)
 def save_meals(
     conn: sqlite3.Connection, request_id: int, meals: List[Dict[str, Any]]
 ) -> None:
