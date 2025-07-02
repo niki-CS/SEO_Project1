@@ -34,6 +34,16 @@ def init_db(path: str) -> sqlite3.Connection:
             FOREIGN KEY(request_id) REFERENCES requests(id)
         )
     ''')
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS local_stores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            request_id INTEGER NOT NULL,
+            city TEXT,
+            state TEXT,
+            suggestions TEXT,
+            FOREIGN KEY(request_id) REFERENCES requests(id)
+        )
+    ''')
     conn.commit()
     return conn
 
@@ -79,5 +89,18 @@ def save_feedback(
     cur.execute(
         'INSERT INTO feedback (request_id, satisfied, comments) VALUES (?, ?, ?)',
         (request_id, int(satisfied), comments)
+    )
+    conn.commit()
+def save_local_stores(
+    conn: sqlite3.Connection, request_id: int, city: str, state: str, suggestions: str
+) -> None:
+    """Save Gemini's local store suggestions linked to a request."""
+    cur = conn.cursor()
+    cur.execute(
+        '''
+        INSERT INTO local_stores (request_id, city, state, suggestions)
+        VALUES (?, ?, ?, ?)
+        ''',
+        (request_id, city, state, suggestions)
     )
     conn.commit()

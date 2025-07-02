@@ -3,7 +3,6 @@
 # Uses Spoonacular API to generate 3 meal prep ideas
 # Uses Gemini API to summarize recipes
 # Saves to SQLite DB
-
 import os
 import sqlite3
 import google.generativeai as genai
@@ -13,7 +12,8 @@ from database_functions import (
     init_db,
     save_request,
     save_meals,
-    save_feedback
+    save_feedback,
+    save_local_stores
 )
 
 # Your AI Studio API Key
@@ -22,10 +22,10 @@ SPOON_API_KEY = os.getenv('SPOON_API_KEY')
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 
 if not SPOON_API_KEY:
-    print("❌ ERROR: SPOON_API_KEY not set. Export your Spoonacular key first.")
+    print(" ERROR: SPOON_API_KEY not set. Export your Spoonacular key first.")
     exit(1)
 if not GOOGLE_API_KEY:
-    print("❌ ERROR: GOOGLE_API_KEY environment variable not set.")
+    print(" ERROR: GOOGLE_API_KEY environment variable not set.")
     print("Please set it like this in your terminal:")
     print('export GOOGLE_API_KEY="YOUR_KEY_HERE"')
     exit(1)
@@ -48,7 +48,18 @@ def call_spoonacular(budget, diets):
     resp = requests.get(url, params={k: v for k, v in params.items() if v is not None})
     resp.raise_for_status()
     return resp.json().get('results', [])
-
+def get_local_stores_from_gemini(city: str, state: str, budget: float) -> str:
+    prompt = (
+        f"I'm planning to shop for groceries in {city}, {state}. "
+        f"My budget is around ${budget:.2f}. "
+        "Please suggest 5 local grocery stores or supermarket chains in that city, "
+        "with a plausible price range for each in dollars (low–high), and a short one-line description. "
+        "Format them exactly like this:\n\n"
+        "- Store Name (Price Range: $low–$high): Description\n\n"
+        "Keep it concise and realistic."
+    )
+    resp = model.generate_content(prompt)
+    return resp.text.strip()
 def summarize_with_genai(text):
     # Summarize recipe description with Gemini and Spoonacular.
     if not text:
@@ -132,10 +143,21 @@ def main():
     # 4. Get user dietary restrictions
     diets_input = input("Enter any dietary restrictions separated by commas (press Enter if none): ").strip()
     diets = [d.strip() for d in diets_input.split(",") if d.strip()]
-    
+
+    city = input("Enter your city: ").strip()
+    state = input("Enter your state (2-letter abbreviation): ").strip()
+
+    # 4.6 Ask Gemini for local store ideas
+    print("\nAsking Gemini for local stores in your area…\n")
+    local_stores_text = get_local_stores_from_gemini(city, state, budget)
+    print("=== Gemini's Suggested Local Stores ===")
+    print(local_stores_text)
+
     # 5. Save request
     request_id = save_request(conn, budget, servings, diets)
     print(f"Request #{request_id} saved with budget ${budget}, servings {servings}, diets {diets}.")
+
+    save_local_stores(conn, request_id, city, state, local_stores_text)
 
 
     # 5. Fetch recipes using Spoonacular API
