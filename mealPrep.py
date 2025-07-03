@@ -7,6 +7,8 @@ import os
 import sqlite3
 import google.generativeai as genai
 import requests
+import pyfiglet
+from colorama import init, Fore, Style
 from typing import List
 from database_functions import (
     init_db,
@@ -117,7 +119,11 @@ def generate_shopping_list_with_genai(recipes: List[dict]) -> str:
     return resp.text.strip()
 
 def main():
-    print("\n=== Welcome to the Meal Prep CLI (Powered by Gemini and Spoonacular) ===")
+    init(autoreset=True)
+
+    ascii_banner = pyfiglet.figlet_format("Prep and Go ")
+    print(Fore.MAGENTA + ascii_banner)
+    print(Fore.MAGENTA + Style.BRIGHT + "Welcome to the Prep and Go!\n")
 
     # 1. Init DB
     conn = init_db(DB_PATH)
