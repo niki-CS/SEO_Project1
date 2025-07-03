@@ -72,33 +72,6 @@ def summarize_with_genai(text):
     response = model.generate_content(prompt)
     text = response.text
 
-    # Parse: split on double newlines
-    meals = []
-    for block in text.strip().split("\n\n"):
-        lines = block.strip().split("\n")
-        meal = {"title": "", "price": 0.0, "diets": [], "summary": "", "source_url": ""}
-
-        for line in lines:
-            line = line.strip()
-            if line.lower().startswith("title:"):
-                meal["title"] = line.partition(":")[2].strip()
-            elif line.lower().startswith("estimated price"):
-                try:
-                    price_text = line.partition(":")[2].strip().replace("$", "")
-                    meal["price"] = float(price_text)
-                except ValueError:
-                    meal["price"] = 0.0
-            elif line.lower().startswith("diet tags"):
-                tags = line.partition(":")[2].strip()
-                meal["diets"] = [tag.strip() for tag in tags.split(",") if tag.strip()]
-            elif line.lower().startswith("source url"):
-                meal["source_url"] = line.partition(":")[2].strip()
-
-        if meal["title"]:
-            meals.append(meal)
-
-    return meals
-
 def display_meals(meals):
     print("\n=== Meal Suggestions ===")
     for i, m in enumerate(meals, 1):
