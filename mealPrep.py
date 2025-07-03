@@ -34,7 +34,7 @@ if not GOOGLE_API_KEY:
 
 # Initialize Gemini
 genai.configure(api_key=GOOGLE_API_KEY)
-model = genai.GenerativeModel("gemini-2.5-pro")
+model = genai.GenerativeModel("gemini-2.5-flash")
 DB_PATH = 'mealplanner.db'
 
 def call_spoonacular(budget, diets):
@@ -112,8 +112,7 @@ def generate_shopping_list_with_genai(recipes: List[dict]) -> str:
     prompt = (
         "Here are five recipes I plan to make:\n"
         + "\n".join(f"- {t}" for t in titles)
-        + "\n\nPlease provide a combined shopping list of ingredients, "
-        "organized by category (produce, dairy, pantry, etc.). "
+        + "\n\nPlease provide a combined shopping list of ingredients organized by category (produce, dairy, pantry, etc.). "
     )
     resp = model.generate_content(prompt)
     return resp.text.strip()
